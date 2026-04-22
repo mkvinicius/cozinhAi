@@ -307,7 +307,7 @@ export function cmvRoutes(db: Db) {
     res.status(201).json({ ok: true, data: created });
   });
 
-  router.put("/:slug/fornecedores/:id", requireAuth, validateBody(fornecedorSchema.partial()), async (req, res) => {
+  router.patch("/:slug/fornecedores/:id", requireAuth, validateBody(fornecedorSchema.partial()), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
     const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
@@ -364,7 +364,7 @@ export function cmvRoutes(db: Db) {
     res.status(201).json({ ok: true, data: created });
   });
 
-  router.put("/:slug/ingredientes/:id", requireAuth, validateBody(insumoSchema.partial()), async (req, res) => {
+  router.patch("/:slug/ingredientes/:id", requireAuth, validateBody(insumoSchema.partial()), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
     const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
