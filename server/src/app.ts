@@ -33,7 +33,7 @@ export function createApp(db: Db) {
   app.use("/api/empresas", tarefaRoutes(db));
   app.use("/api/empresas", agenteRoutes(db));
   app.use("/api/empresas", runRoutes(db));
-  app.use("/api/empresas", cmvRoutes(db));
+  app.use("/api/empresas", cmvRoutes(db));  /* compras, cmv, faturamento, fornecedores, ingredientes */
 
   /* Catch-all for unknown routes */
   app.use((_req, res) => {

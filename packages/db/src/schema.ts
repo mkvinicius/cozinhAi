@@ -389,6 +389,25 @@ export const cmvSnapshot = pgTable("cmv_snapshot", {
 });
 
 /* =========================================================
+   CMV — FATURAMENTO (monthly revenue)
+   ========================================================= */
+
+export const cmvFaturamento = pgTable("cmv_faturamento", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empresaId: uuid("empresa_id")
+    .notNull()
+    .references(() => empresa.id, { onDelete: "cascade" }),
+  mes: integer("mes").notNull(),
+  ano: integer("ano").notNull(),
+  faturamentoCentavos: bigint("faturamento_centavos", { mode: "number" }).notNull(),
+  totalClientes: integer("total_clientes"),
+  observacoes: text("observacoes"),
+  registradoPorId: text("registrado_por_id").references(() => usuario.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/* =========================================================
    CMV — ALERTAS (alerts)
    ========================================================= */
 
@@ -425,6 +444,7 @@ export const empresaRelations = relations(empresa, ({ many, one }) => ({
   compras: many(cmvCompra),
   snapshots: many(cmvSnapshot),
   alertas: many(cmvAlerta),
+  faturamentos: many(cmvFaturamento),
 }));
 
 export const membroRelations = relations(membro, ({ one }) => ({

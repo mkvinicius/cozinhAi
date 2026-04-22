@@ -1,14 +1,11 @@
 import { Link, useRoute } from "wouter";
 import {
-  LayoutDashboard,
-  Bot,
-  CheckSquare,
-  ChefHat,
-  Building2,
-  Settings,
-  LogOut,
+  LayoutDashboard, Bot, CheckSquare, ChefHat, Building2,
+  Settings, LogOut, ShoppingCart, Truck, Package, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth-client";
+import { useLocation } from "wouter";
 
 type NavItem = {
   href: string;
@@ -34,15 +31,25 @@ function NavLink({ href, label, icon: Icon }: NavItem) {
   );
 }
 
+function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 mt-3 mb-1">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 export function Layout({ children, slug }: { children: React.ReactNode; slug: string }) {
+  const [, navigate] = useLocation();
   const base = `/${slug}`;
-  const navItems: NavItem[] = [
-    { href: `${base}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
-    { href: `${base}/cmv`, label: "CMV", icon: ChefHat },
-    { href: `${base}/tarefas`, label: "Tarefas", icon: CheckSquare },
-    { href: `${base}/agentes`, label: "Agentes", icon: Bot },
-    { href: `${base}/configuracoes`, label: "Configurações", icon: Settings },
-  ];
+
+  async function handleLogout() {
+    await authClient.signOut();
+    navigate("/login");
+  }
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-950">
@@ -56,13 +63,27 @@ export function Layout({ children, slug }: { children: React.ReactNode; slug: st
           <p className="text-xs text-gray-500 mt-0.5 truncate">{slug}</p>
         </div>
 
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavLink key={item.href} {...item} />
-          ))}
+        <nav className="flex-1 p-3 overflow-y-auto">
+          <NavLink href={`${base}/dashboard`} label="Dashboard" icon={LayoutDashboard} />
+
+          <NavGroup label="CMV">
+            <NavLink href={`${base}/cmv`} label="Painel CMV" icon={TrendingDown} />
+            <NavLink href={`${base}/compras`} label="Compras" icon={ShoppingCart} />
+            <NavLink href={`${base}/fornecedores`} label="Fornecedores" icon={Truck} />
+            <NavLink href={`${base}/ingredientes`} label="Ingredientes" icon={Package} />
+          </NavGroup>
+
+          <NavGroup label="Operação">
+            <NavLink href={`${base}/tarefas`} label="Tarefas" icon={CheckSquare} />
+            <NavLink href={`${base}/agentes`} label="Agentes" icon={Bot} />
+          </NavGroup>
+
+          <NavGroup label="Conta">
+            <NavLink href={`${base}/configuracoes`} label="Configurações" icon={Settings} />
+          </NavGroup>
         </nav>
 
-        <div className="p-3 border-t border-gray-200 dark:border-gray-800">
+        <div className="p-3 border-t border-gray-200 dark:border-gray-800 space-y-0.5">
           <Link
             href="/empresas"
             className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
@@ -70,7 +91,10 @@ export function Layout({ children, slug }: { children: React.ReactNode; slug: st
             <Building2 className="h-4 w-4" />
             Trocar empresa
           </Link>
-          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+          >
             <LogOut className="h-4 w-4" />
             Sair
           </button>
