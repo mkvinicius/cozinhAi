@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/db" },
+    { "path": "./packages/shared" },
+    { "path": "./packages/adapters/claude" },
+    { "path": "./packages/adapters/gemini" },
+    { "path": "./packages/adapters/openai" },
+    { "path": "./server" },
+    { "path": "./cli" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "composite": true,
+    "lib": ["ES2022"]
+  },
+  "references": [
+    { "path": "../packages/db" },
+    { "path": "../packages/shared" },
+    { "path": "../packages/adapters/claude" },
+    { "path": "../packages/adapters/gemini" },
+    { "path": "../packages/adapters/openai" }
+  ],
+  "include": ["src"]
+}

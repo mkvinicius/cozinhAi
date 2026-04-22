@@ -1,0 +1,30 @@
+{
+  "name": "cozinhai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma de gestão de restaurantes com CMV e agentes de IA",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter server dev\" \"pnpm --filter ui dev\"",
+    "dev:server": "pnpm --filter server dev",
+    "dev:ui": "pnpm --filter ui dev",
+    "build": "pnpm --filter db build && pnpm --filter shared build && pnpm --filter adapters build && pnpm --filter server build && pnpm --filter ui build",
+    "db:push": "pnpm --filter db push",
+    "db:migrate": "pnpm --filter db migrate",
+    "db:studio": "pnpm --filter db studio",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "concurrently": "^9.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
