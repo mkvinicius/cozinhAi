@@ -2,6 +2,7 @@ import { Route, Switch, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Login } from "@/pages/Login";
 import { Empresas } from "@/pages/Empresas";
+import { Onboarding } from "@/pages/Onboarding";
 import { Dashboard } from "@/pages/Dashboard";
 import { CmvDashboard } from "@/pages/CmvDashboard";
 import { Agentes } from "@/pages/Agentes";
@@ -38,10 +39,10 @@ function EmpresaRoutes({ slug }: { slug: string }) {
   return (
     <Layout slug={slug}>
       <Switch>
-        <Route path={`/:s/dashboard`}><Dashboard slug={slug} /></Route>
-        <Route path={`/:s/cmv`}><CmvDashboard slug={slug} /></Route>
-        <Route path={`/:s/agentes`}><Agentes slug={slug} /></Route>
-        <Route path={`/:s/tarefas`}><Tarefas slug={slug} /></Route>
+        <Route path="/:s/dashboard"><Dashboard slug={slug} /></Route>
+        <Route path="/:s/cmv"><CmvDashboard slug={slug} /></Route>
+        <Route path="/:s/agentes"><Agentes slug={slug} /></Route>
+        <Route path="/:s/tarefas"><Tarefas slug={slug} /></Route>
         <Route><Redirect to={`/${slug}/dashboard`} /></Route>
       </Switch>
     </Layout>
@@ -53,6 +54,9 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <Switch>
         <Route path="/login"><Login /></Route>
+        <Route path="/onboarding">
+          <AuthGuard><Onboarding /></AuthGuard>
+        </Route>
         <Route path="/empresas">
           <AuthGuard><Empresas /></AuthGuard>
         </Route>

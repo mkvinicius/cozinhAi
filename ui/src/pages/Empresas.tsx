@@ -82,7 +82,7 @@ export function Empresas() {
 
         {!showCreate ? (
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => navigate("/onboarding")}
             className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium"
           >
             <Plus className="h-4 w-4" />

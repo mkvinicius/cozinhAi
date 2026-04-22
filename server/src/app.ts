@@ -7,6 +7,7 @@ import { createAuth } from "./auth/better-auth.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { healthRoutes } from "./routes/health.js";
 import { empresaRoutes } from "./routes/empresa.js";
+import { onboardingRoutes } from "./routes/onboarding.js";
 import { tarefaRoutes } from "./routes/tarefas.js";
 import { agenteRoutes } from "./routes/agentes.js";
 import { cmvRoutes } from "./routes/cmv.js";
@@ -26,6 +27,7 @@ export function createApp(db: Db) {
 
   /* Routes */
   app.use("/api/health", healthRoutes());
+  app.use("/api/onboarding", onboardingRoutes(db));
   app.use("/api/empresas", empresaRoutes(db));
   app.use("/api/empresas", tarefaRoutes(db));
   app.use("/api/empresas", agenteRoutes(db));

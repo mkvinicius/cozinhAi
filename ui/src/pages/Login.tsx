@@ -19,10 +19,11 @@ export function Login() {
     try {
       if (mode === "login") {
         await authClient.signIn.email({ email, password });
+        navigate("/empresas");
       } else {
         await authClient.signUp.email({ email, password, name: nome });
+        navigate("/onboarding");
       }
-      navigate("/empresas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao autenticar");
     } finally {
