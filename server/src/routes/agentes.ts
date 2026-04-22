@@ -42,6 +42,20 @@ export function agenteRoutes(db: Db) {
     res.json({ ok: true, data: agentes });
   });
 
+  router.get("/:slug/agentes/:id", requireAuth, async (req, res) => {
+    const userId = req.actor.type === "user" ? req.actor.userId : "";
+    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
+
+    const [found] = await db
+      .select()
+      .from(agente)
+      .where(and(eq(agente.id, req.params["id"] ?? ""), eq(agente.empresaId, emp.id)));
+
+    if (!found) { res.status(404).json({ ok: false, error: "Agente não encontrado" }); return; }
+    res.json({ ok: true, data: found });
+  });
+
   router.post("/:slug/agentes", requireAuth, validateBody(createAgenteSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
     const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);

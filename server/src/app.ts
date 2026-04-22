@@ -10,6 +10,7 @@ import { empresaRoutes } from "./routes/empresa.js";
 import { onboardingRoutes } from "./routes/onboarding.js";
 import { tarefaRoutes } from "./routes/tarefas.js";
 import { agenteRoutes } from "./routes/agentes.js";
+import { runRoutes } from "./routes/runs.js";
 import { cmvRoutes } from "./routes/cmv.js";
 
 export function createApp(db: Db) {
@@ -31,6 +32,7 @@ export function createApp(db: Db) {
   app.use("/api/empresas", empresaRoutes(db));
   app.use("/api/empresas", tarefaRoutes(db));
   app.use("/api/empresas", agenteRoutes(db));
+  app.use("/api/empresas", runRoutes(db));
   app.use("/api/empresas", cmvRoutes(db));
 
   /* Catch-all for unknown routes */

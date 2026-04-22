@@ -6,6 +6,7 @@ import { Onboarding } from "@/pages/Onboarding";
 import { Dashboard } from "@/pages/Dashboard";
 import { CmvDashboard } from "@/pages/CmvDashboard";
 import { Agentes } from "@/pages/Agentes";
+import { AgenteDetail } from "@/pages/AgenteDetail";
 import { Tarefas } from "@/pages/Tarefas";
 import { Layout } from "@/components/Layout";
 import { authClient } from "@/lib/auth-client";
@@ -41,6 +42,7 @@ function EmpresaRoutes({ slug }: { slug: string }) {
       <Switch>
         <Route path="/:s/dashboard"><Dashboard slug={slug} /></Route>
         <Route path="/:s/cmv"><CmvDashboard slug={slug} /></Route>
+        <Route path="/:s/agentes/:id">{(p) => <AgenteDetail slug={slug} agenteId={p.id} />}</Route>
         <Route path="/:s/agentes"><Agentes slug={slug} /></Route>
         <Route path="/:s/tarefas"><Tarefas slug={slug} /></Route>
         <Route><Redirect to={`/${slug}/dashboard`} /></Route>

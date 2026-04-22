@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Bot, Play, Clock } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ const provedorColors: Record<string, string> = {
 };
 
 export function Agentes({ slug }: { slug: string }) {
+  const [, navigate] = useLocation();
   const { data: agentes = [], isLoading } = useQuery({
     queryKey: ["agentes", slug],
     queryFn: () => api.get<Agente[]>(`/empresas/${slug}/agentes`),
@@ -48,7 +50,8 @@ export function Agentes({ slug }: { slug: string }) {
           {agentes.map((a) => (
             <div
               key={a.id}
-              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex items-start gap-4"
+              onClick={() => navigate(`/${slug}/agentes/${a.id}`)}
+              className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex items-start gap-4 cursor-pointer hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
             >
               <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <Bot className="h-5 w-5 text-gray-600 dark:text-gray-400" />
