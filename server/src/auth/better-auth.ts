@@ -6,7 +6,7 @@ import { config } from "../config.js";
 
 export function createAuth(db: Db) {
   return betterAuth({
-    baseURL: config.betterAuthUrl,
+    baseURL: process.env["BETTER_AUTH_URL"] ?? process.env["BETTER_AUTH_BASE_URL"] ?? `http://localhost:${process.env["PORT"] ?? "3100"}`,
     secret: config.betterAuthSecret,
     trustedOrigins: config.corsOrigins,
     database: drizzleAdapter(db, {

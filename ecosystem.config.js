@@ -1,3 +1,5 @@
+require("dotenv").config({ path: "/root/cozinhai/.env" });
+
 module.exports = {
   apps: [
     {
@@ -5,7 +7,7 @@ module.exports = {
       script: "server/dist/index.js",
       cwd: "/root/cozinhai",
       interpreter: "node",
-      interpreter_args: "--experimental-vm-modules",
+      env_file: "/root/cozinhai/.env",
       env: {
         NODE_ENV: "production",
         PORT: 3100,
