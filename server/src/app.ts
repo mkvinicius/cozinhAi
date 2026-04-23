@@ -21,7 +21,7 @@ export function createApp(db: Db): Express {
   app.use(express.json({ limit: "10mb" }));
 
   /* Better-auth handles /api/auth/* */
-  app.all("/api/auth/*", toNodeHandler(auth));
+  app.all("/api/auth/*path", toNodeHandler(auth));
 
   /* Actor resolution for all API routes */
   app.use("/api", actorMiddleware(auth));
