@@ -35,10 +35,5 @@ export function createApp(db: Db): Express {
   app.use("/api/empresas", runRoutes(db));
   app.use("/api/empresas", cmvRoutes(db));  /* compras, cmv, faturamento, fornecedores, ingredientes */
 
-  /* Catch-all for unknown routes */
-  app.use((_req, res) => {
-    res.status(404).json({ ok: false, error: "Rota não encontrada" });
-  });
-
   return app;
 }
