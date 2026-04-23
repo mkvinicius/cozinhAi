@@ -7,7 +7,7 @@
     "dev": "concurrently \"pnpm --filter server dev\" \"pnpm --filter ui dev\"",
     "dev:server": "pnpm --filter server dev",
     "dev:ui": "pnpm --filter ui dev",
-    "build": "pnpm --filter db build && pnpm --filter shared build && pnpm --filter adapters build && pnpm --filter server build && pnpm --filter ui build",
+    "build": "pnpm --filter db build && pnpm --filter shared build && pnpm --filter @cozinhai/adapter-claude build && pnpm --filter @cozinhai/adapter-gemini build && pnpm --filter @cozinhai/adapter-openai build && pnpm --filter server build && pnpm --filter ui build",
     "db:push": "pnpm --filter db push",
     "db:migrate": "pnpm --filter db migrate",
     "db:studio": "pnpm --filter db studio",
