@@ -1,5 +1,6 @@
 import "dotenv/config";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import express from "express";
 import { createDb } from "@cozinhai/db";
@@ -9,22 +10,32 @@ import { config } from "./config.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// __dirname = /root/cozinhai/server/dist
+// ../../ui/dist = /root/cozinhai/ui/dist
+const uiDist = path.resolve(__dirname, "..", "..", "ui", "dist");
+
 async function main() {
   const db = createDb(config.databaseUrl);
   const app = createApp(db);
 
-  /* 4. Static files + SPA fallback (production only, AFTER all API routes) */
+  /* Static files + SPA fallback — AFTER all API routes, BEFORE 404 */
   if (config.nodeEnv === "production") {
-    const uiDist = path.join(__dirname, "../../ui/dist");
-    app.use(express.static(uiDist));
+    console.log(`[static] ui/dist path: ${uiDist}`);
+    console.log(`[static] exists: ${fs.existsSync(uiDist)}`);
 
-    /* SPA fallback — any non-API route serves index.html */
-    app.get("*path", (_req, res) => {
-      res.sendFile(path.join(uiDist, "index.html"));
-    });
+    if (fs.existsSync(uiDist)) {
+      app.use(express.static(uiDist));
+
+      /* SPA fallback — any non-API route serves index.html */
+      app.get("*path", (_req, res) => {
+        res.sendFile(path.join(uiDist, "index.html"));
+      });
+    } else {
+      console.warn(`[static] WARNING: ui/dist not found at ${uiDist} — frontend não será servido`);
+    }
   }
 
-  /* 5. API 404 catch-all (only reached if no API route matched and not in production SPA) */
+  /* API 404 catch-all */
   app.use((_req, res) => {
     res.status(404).json({ ok: false, error: "Rota não encontrada" });
   });
