@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, ShoppingCart, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { formatBRL, cn } from "@/lib/utils";
+import { formatBRL } from "@/lib/utils";
 
 type Compra = {
   id: string;

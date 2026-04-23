@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@cozinhai/db";
@@ -22,6 +22,9 @@ const updateTarefaSchema = z.object({
   descricao: z.string().optional(),
 });
 
+const p = (v: string | string[] | undefined): string =>
+  Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
+
 async function checkMembership(db: Db, slug: string, userId: string) {
   const [emp] = await db.select().from(empresa).where(eq(empresa.slug, slug));
   if (!emp) return null;
@@ -32,12 +35,12 @@ async function checkMembership(db: Db, slug: string, userId: string) {
   return mem ? emp : null;
 }
 
-export function tarefaRoutes(db: Db) {
+export function tarefaRoutes(db: Db): RequestHandler {
   const router = Router();
 
   router.get("/:slug/tarefas", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await checkMembership(db, req.params["slug"] ?? "", userId);
+    const emp = await checkMembership(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Empresa não encontrada ou acesso negado" }); return; }
 
     const items = await db.query.tarefa.findMany({
@@ -50,25 +53,26 @@ export function tarefaRoutes(db: Db) {
 
   router.post("/:slug/tarefas", requireAuth, validateBody(createTarefaSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await checkMembership(db, req.params["slug"] ?? "", userId);
+    const emp = await checkMembership(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Empresa não encontrada ou acesso negado" }); return; }
 
+    const prazo = req.body.prazo ? new Date(req.body.prazo as string) : undefined;
     const [created] = await db
       .insert(tarefa)
-      .values({ ...req.body, empresaId: emp.id, criadoPorId: userId, prazo: req.body.prazo ? new Date(req.body.prazo) : undefined })
+      .values({ ...req.body, empresaId: emp.id, criadoPorId: userId, ...(prazo !== undefined ? { prazo } : {}) })
       .returning();
     res.status(201).json({ ok: true, data: created });
   });
 
   router.patch("/:slug/tarefas/:id", requireAuth, validateBody(updateTarefaSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await checkMembership(db, req.params["slug"] ?? "", userId);
+    const emp = await checkMembership(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [updated] = await db
       .update(tarefa)
       .set({ ...req.body, updatedAt: new Date() })
-      .where(and(eq(tarefa.id, req.params["id"] ?? ""), eq(tarefa.empresaId, emp.id)))
+      .where(and(eq(tarefa.id, p(req.params["id"])), eq(tarefa.empresaId, emp.id)))
       .returning();
 
     if (!updated) { res.status(404).json({ ok: false, error: "Tarefa não encontrada" }); return; }
@@ -77,16 +81,16 @@ export function tarefaRoutes(db: Db) {
 
   router.post("/:slug/tarefas/:id/comentarios", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await checkMembership(db, req.params["slug"] ?? "", userId);
+    const emp = await checkMembership(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(403).json({ ok: false, error: "Acesso negado" }); return; }
 
     const { conteudo } = z.object({ conteudo: z.string().min(1) }).parse(req.body);
     const [created] = await db
       .insert(comentario)
-      .values({ tarefaId: req.params["id"] ?? "", autorId: userId, conteudo })
+      .values({ tarefaId: p(req.params["id"]), autorId: userId, conteudo })
       .returning();
     res.status(201).json({ ok: true, data: created });
   });
 
-  return router;
+  return router as unknown as RequestHandler;
 }

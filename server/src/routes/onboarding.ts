@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@cozinhai/db";
@@ -81,7 +81,10 @@ Sempre justifique a escolha do fornecedor com base no preço e histórico.`,
   ];
 }
 
-export function onboardingRoutes(db: Db) {
+const p = (v: string | string[] | undefined): string =>
+  Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
+
+export function onboardingRoutes(db: Db): RequestHandler {
   const router = Router();
 
   /* Check slug availability */
@@ -89,7 +92,7 @@ export function onboardingRoutes(db: Db) {
     const [found] = await db
       .select({ id: empresa.id })
       .from(empresa)
-      .where(eq(empresa.slug, req.params["slug"] ?? ""));
+      .where(eq(empresa.slug, p(req.params["slug"])));
     res.json({ ok: true, data: { available: !found } });
   });
 
@@ -147,7 +150,7 @@ export function onboardingRoutes(db: Db) {
     const userId = req.actor.type === "user" ? req.actor.userId : null;
     if (!userId) { res.status(401).json({ ok: false, error: "Não autenticado" }); return; }
 
-    const [emp] = await db.select().from(empresa).where(eq(empresa.slug, req.params["slug"] ?? ""));
+    const [emp] = await db.select().from(empresa).where(eq(empresa.slug, p(req.params["slug"])));
     if (!emp) { res.status(404).json({ ok: false, error: "Empresa não encontrada" }); return; }
 
     const [mem] = await db
@@ -164,5 +167,5 @@ export function onboardingRoutes(db: Db) {
     res.json({ ok: true, data: config ?? null });
   });
 
-  return router;
+  return router as unknown as RequestHandler;
 }

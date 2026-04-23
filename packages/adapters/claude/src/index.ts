@@ -25,7 +25,7 @@ export class ClaudeAdapter {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: this.maxTokens,
-      system: systemPrompt,
+      ...(systemPrompt !== undefined ? { system: systemPrompt } : {}),
       messages: messages
         .filter((m) => m.role !== "system")
         .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
@@ -40,7 +40,7 @@ export class ClaudeAdapter {
     const stream = this.client.messages.stream({
       model: this.model,
       max_tokens: this.maxTokens,
-      system: systemPrompt,
+      ...(systemPrompt !== undefined ? { system: systemPrompt } : {}),
       messages: messages
         .filter((m) => m.role !== "system")
         .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),

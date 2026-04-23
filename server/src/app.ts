@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Express } from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import type { Db } from "@cozinhai/db";
@@ -13,7 +13,7 @@ import { agenteRoutes } from "./routes/agentes.js";
 import { runRoutes } from "./routes/runs.js";
 import { cmvRoutes } from "./routes/cmv.js";
 
-export function createApp(db: Db) {
+export function createApp(db: Db): Express {
   const app = express();
   const auth = createAuth(db);
 

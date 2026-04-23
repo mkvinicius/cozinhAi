@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@cozinhai/db";
@@ -17,6 +17,9 @@ import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import { calcularCmv, recalcularMesAtual } from "../services/cmv-calculator.js";
 import { verificarAlertasPostCompra } from "../services/cmv-alerts.js";
+
+const p = (v: string | string[] | undefined): string =>
+  Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
 
 async function resolveEmpresa(db: Db, slug: string, userId: string) {
   const [emp] = await db.select().from(empresa).where(eq(empresa.slug, slug));
@@ -74,7 +77,7 @@ const insumoSchema = z.object({
   estoqueMinimo: z.number().int().positive().optional(),
 });
 
-export function cmvRoutes(db: Db) {
+export function cmvRoutes(db: Db): RequestHandler {
   const router = Router();
 
   /* ================================================================
@@ -83,7 +86,7 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/cmv", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const now = new Date();
@@ -94,7 +97,7 @@ export function cmvRoutes(db: Db) {
   /* Histórico dos últimos 12 meses */
   router.get("/:slug/cmv/historico", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const snapshots = await db
@@ -110,11 +113,11 @@ export function cmvRoutes(db: Db) {
   /* CMV para mês/ano específico */
   router.get("/:slug/cmv/:ano/:mes", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
-    const mes = parseInt(req.params["mes"] ?? "0");
-    const ano = parseInt(req.params["ano"] ?? "0");
+    const mes = parseInt(p(req.params["mes"]));
+    const ano = parseInt(p(req.params["ano"]));
     if (!mes || !ano) { res.status(400).json({ ok: false, error: "Mês/ano inválido" }); return; }
 
     const result = await calcularCmv(db, emp.id, mes, ano);
@@ -127,7 +130,7 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/cmv/alertas", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const alertas = await db
@@ -141,13 +144,13 @@ export function cmvRoutes(db: Db) {
 
   router.patch("/:slug/cmv/alertas/:id/resolver", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [updated] = await db
       .update(cmvAlerta)
       .set({ resolvido: true, resolvidoEm: new Date() })
-      .where(and(eq(cmvAlerta.id, req.params["id"] ?? ""), eq(cmvAlerta.empresaId, emp.id)))
+      .where(and(eq(cmvAlerta.id, p(req.params["id"])), eq(cmvAlerta.empresaId, emp.id)))
       .returning();
 
     if (!updated) { res.status(404).json({ ok: false, error: "Alerta não encontrado" }); return; }
@@ -160,7 +163,7 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/compras", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const compras = await db.query.cmvCompra.findMany({
@@ -174,11 +177,11 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/compras/:id", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const compra = await db.query.cmvCompra.findFirst({
-      where: and(eq(cmvCompra.id, req.params["id"] ?? ""), eq(cmvCompra.empresaId, emp.id)),
+      where: and(eq(cmvCompra.id, p(req.params["id"])), eq(cmvCompra.empresaId, emp.id)),
       with: { fornecedor: true, itens: true },
     });
 
@@ -188,7 +191,7 @@ export function cmvRoutes(db: Db) {
 
   router.post("/:slug/compras", requireAuth, validateBody(compraSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const { itens, ...compraData } = req.body;
@@ -219,12 +222,12 @@ export function cmvRoutes(db: Db) {
 
   router.delete("/:slug/compras/:id", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [deleted] = await db
       .delete(cmvCompra)
-      .where(and(eq(cmvCompra.id, req.params["id"] ?? ""), eq(cmvCompra.empresaId, emp.id)))
+      .where(and(eq(cmvCompra.id, p(req.params["id"])), eq(cmvCompra.empresaId, emp.id)))
       .returning();
 
     if (!deleted) { res.status(404).json({ ok: false, error: "Compra não encontrada" }); return; }
@@ -239,7 +242,7 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/faturamento", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const registros = await db
@@ -253,7 +256,7 @@ export function cmvRoutes(db: Db) {
 
   router.post("/:slug/faturamento", requireAuth, validateBody(faturamentoSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     /* Upsert: one record per mes/ano */
@@ -286,7 +289,7 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/fornecedores", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const lista = await db
@@ -300,7 +303,7 @@ export function cmvRoutes(db: Db) {
 
   router.post("/:slug/fornecedores", requireAuth, validateBody(fornecedorSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [created] = await db.insert(cmvFornecedor).values({ ...req.body, empresaId: emp.id }).returning();
@@ -309,13 +312,13 @@ export function cmvRoutes(db: Db) {
 
   router.patch("/:slug/fornecedores/:id", requireAuth, validateBody(fornecedorSchema.partial()), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [updated] = await db
       .update(cmvFornecedor)
       .set({ ...req.body, updatedAt: new Date() })
-      .where(and(eq(cmvFornecedor.id, req.params["id"] ?? ""), eq(cmvFornecedor.empresaId, emp.id)))
+      .where(and(eq(cmvFornecedor.id, p(req.params["id"])), eq(cmvFornecedor.empresaId, emp.id)))
       .returning();
 
     if (!updated) { res.status(404).json({ ok: false, error: "Fornecedor não encontrado" }); return; }
@@ -324,13 +327,13 @@ export function cmvRoutes(db: Db) {
 
   router.delete("/:slug/fornecedores/:id", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [updated] = await db
       .update(cmvFornecedor)
       .set({ ativo: false, updatedAt: new Date() })
-      .where(and(eq(cmvFornecedor.id, req.params["id"] ?? ""), eq(cmvFornecedor.empresaId, emp.id)))
+      .where(and(eq(cmvFornecedor.id, p(req.params["id"])), eq(cmvFornecedor.empresaId, emp.id)))
       .returning();
 
     if (!updated) { res.status(404).json({ ok: false, error: "Fornecedor não encontrado" }); return; }
@@ -343,7 +346,7 @@ export function cmvRoutes(db: Db) {
 
   router.get("/:slug/ingredientes", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const lista = await db
@@ -357,7 +360,7 @@ export function cmvRoutes(db: Db) {
 
   router.post("/:slug/ingredientes", requireAuth, validateBody(insumoSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [created] = await db.insert(cmvInsumo).values({ ...req.body, empresaId: emp.id }).returning();
@@ -366,13 +369,13 @@ export function cmvRoutes(db: Db) {
 
   router.patch("/:slug/ingredientes/:id", requireAuth, validateBody(insumoSchema.partial()), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [updated] = await db
       .update(cmvInsumo)
       .set({ ...req.body, updatedAt: new Date() })
-      .where(and(eq(cmvInsumo.id, req.params["id"] ?? ""), eq(cmvInsumo.empresaId, emp.id)))
+      .where(and(eq(cmvInsumo.id, p(req.params["id"])), eq(cmvInsumo.empresaId, emp.id)))
       .returning();
 
     if (!updated) { res.status(404).json({ ok: false, error: "Ingrediente não encontrado" }); return; }
@@ -381,18 +384,18 @@ export function cmvRoutes(db: Db) {
 
   router.delete("/:slug/ingredientes/:id", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [updated] = await db
       .update(cmvInsumo)
       .set({ ativo: false, updatedAt: new Date() })
-      .where(and(eq(cmvInsumo.id, req.params["id"] ?? ""), eq(cmvInsumo.empresaId, emp.id)))
+      .where(and(eq(cmvInsumo.id, p(req.params["id"])), eq(cmvInsumo.empresaId, emp.id)))
       .returning();
 
     if (!updated) { res.status(404).json({ ok: false, error: "Ingrediente não encontrado" }); return; }
     res.json({ ok: true });
   });
 
-  return router;
+  return router as unknown as RequestHandler;
 }

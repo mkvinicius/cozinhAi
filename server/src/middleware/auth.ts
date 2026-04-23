@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { fromNodeHeaders } from "better-auth/node";
 import type { Auth } from "../auth/better-auth.js";
 
 export type Actor =
@@ -16,7 +17,7 @@ declare global {
 export function actorMiddleware(auth: Auth) {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
-      const session = await auth.api.getSession({ headers: req.headers as Headers });
+      const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
       if (session?.user) {
         req.actor = { type: "user", userId: session.user.id, email: session.user.email };
       } else {

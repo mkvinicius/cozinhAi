@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@cozinhai/db";
@@ -15,6 +15,9 @@ const createAgenteSchema = z.object({
   llmModelo: z.string().optional(),
 });
 
+const p = (v: string | string[] | undefined): string =>
+  Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
+
 async function resolveEmpresa(db: Db, slug: string, userId: string) {
   const [emp] = await db.select().from(empresa).where(eq(empresa.slug, slug));
   if (!emp) return null;
@@ -25,12 +28,12 @@ async function resolveEmpresa(db: Db, slug: string, userId: string) {
   return mem ? emp : null;
 }
 
-export function agenteRoutes(db: Db) {
+export function agenteRoutes(db: Db): RequestHandler {
   const router = Router();
 
   router.get("/:slug/agentes", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Empresa não encontrada ou acesso negado" }); return; }
 
     const agentes = await db
@@ -44,13 +47,13 @@ export function agenteRoutes(db: Db) {
 
   router.get("/:slug/agentes/:id", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [found] = await db
       .select()
       .from(agente)
-      .where(and(eq(agente.id, req.params["id"] ?? ""), eq(agente.empresaId, emp.id)));
+      .where(and(eq(agente.id, p(req.params["id"])), eq(agente.empresaId, emp.id)));
 
     if (!found) { res.status(404).json({ ok: false, error: "Agente não encontrado" }); return; }
     res.json({ ok: true, data: found });
@@ -58,7 +61,7 @@ export function agenteRoutes(db: Db) {
 
   router.post("/:slug/agentes", requireAuth, validateBody(createAgenteSchema), async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [created] = await db.insert(agente).values({ ...req.body, empresaId: emp.id }).returning();
@@ -67,18 +70,18 @@ export function agenteRoutes(db: Db) {
 
   router.get("/:slug/agentes/:id/runs", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const runs = await db
       .select()
       .from(run)
-      .where(and(eq(run.agenteId, req.params["id"] ?? ""), eq(run.empresaId, emp.id)))
+      .where(and(eq(run.agenteId, p(req.params["id"])), eq(run.empresaId, emp.id)))
       .orderBy(desc(run.iniciadoEm))
       .limit(50);
 
     res.json({ ok: true, data: runs });
   });
 
-  return router;
+  return router as unknown as RequestHandler;
 }

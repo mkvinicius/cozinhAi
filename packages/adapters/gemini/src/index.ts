@@ -34,7 +34,7 @@ export class GeminiAdapter {
     const chat = this.client.chats.create({
       model: this.model,
       config: {
-        systemInstruction: systemPrompt,
+        ...(systemPrompt !== undefined ? { systemInstruction: systemPrompt } : {}),
         maxOutputTokens: this.maxOutputTokens,
       },
       history,
@@ -61,7 +61,7 @@ export class GeminiAdapter {
     const chat = this.client.chats.create({
       model: this.model,
       config: {
-        systemInstruction: systemPrompt,
+        ...(systemPrompt !== undefined ? { systemInstruction: systemPrompt } : {}),
         maxOutputTokens: this.maxOutputTokens,
       },
       history,

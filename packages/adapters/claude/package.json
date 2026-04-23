@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@cozinhai/shared": "workspace:*",
     "@anthropic-ai/sdk": "^0.36.0"
   },
   "devDependencies": {

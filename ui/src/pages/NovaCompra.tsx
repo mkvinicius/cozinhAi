@@ -117,7 +117,7 @@ export function NovaCompra({ slug }: { slug: string }) {
   }
 
   const totalGeral = itens.reduce((s, i) => s + itemTotal(i), 0);
-  const totalGeralReais = totalGeral / 100;
+
   const canSubmit = itens.length > 0 && itens.every((i) => i.descricao && i.quantidade && i.precoCentavos);
 
   return (

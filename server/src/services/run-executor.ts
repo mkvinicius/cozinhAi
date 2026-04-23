@@ -59,9 +59,10 @@ function buildAdapter(
   apiKey: string,
   modelo?: string,
 ) {
-  if (provedor === "claude") return new ClaudeAdapter({ apiKey, model: modelo });
-  if (provedor === "gemini") return new GeminiAdapter({ apiKey, model: modelo });
-  if (provedor === "openai") return new OpenAIAdapter({ apiKey, model: modelo });
+  const modelOverride = modelo !== undefined ? { model: modelo } : {};
+  if (provedor === "claude") return new ClaudeAdapter({ apiKey, ...modelOverride });
+  if (provedor === "gemini") return new GeminiAdapter({ apiKey, ...modelOverride });
+  if (provedor === "openai") return new OpenAIAdapter({ apiKey, ...modelOverride });
   throw new Error(`Provedor desconhecido: ${provedor}`);
 }
 

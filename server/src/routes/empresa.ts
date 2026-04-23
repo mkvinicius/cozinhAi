@@ -1,10 +1,13 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@cozinhai/db";
 import { empresa, membro } from "@cozinhai/db";
 import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
+
+const p = (v: string | string[] | undefined): string =>
+  Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
 
 const createEmpresaSchema = z.object({
   slug: z.string().min(2).max(30).regex(/^[a-z0-9-]+$/),
@@ -17,7 +20,7 @@ const createEmpresaSchema = z.object({
   metaCmvBps: z.number().int().min(1000).max(9000).default(3200),
 });
 
-export function empresaRoutes(db: Db) {
+export function empresaRoutes(db: Db): RequestHandler {
   const router = Router();
 
   router.get("/", requireAuth, async (req, res) => {
@@ -46,7 +49,7 @@ export function empresaRoutes(db: Db) {
     const userId = req.actor.type === "user" ? req.actor.userId : null;
     if (!userId) { res.status(401).json({ ok: false, error: "Não autenticado" }); return; }
 
-    const [found] = await db.select().from(empresa).where(eq(empresa.slug, req.params["slug"] ?? ""));
+    const [found] = await db.select().from(empresa).where(eq(empresa.slug, p(req.params["slug"])));
     if (!found) { res.status(404).json({ ok: false, error: "Empresa não encontrada" }); return; }
 
     const [membership] = await db
@@ -58,5 +61,5 @@ export function empresaRoutes(db: Db) {
     res.json({ ok: true, data: found });
   });
 
-  return router;
+  return router as unknown as RequestHandler;
 }

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@cozinhai/db";
@@ -6,6 +6,9 @@ import { run, agente, empresa, membro } from "@cozinhai/db";
 import { requireAuth } from "../middleware/auth.js";
 import { streamRun } from "../services/run-executor.js";
 import type { RunMessage } from "@cozinhai/shared";
+
+const p = (v: string | string[] | undefined): string =>
+  Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
 
 async function resolveEmpresa(db: Db, slug: string, userId: string) {
   const [emp] = await db.select().from(empresa).where(eq(empresa.slug, slug));
@@ -17,19 +20,19 @@ async function resolveEmpresa(db: Db, slug: string, userId: string) {
   return mem ? emp : null;
 }
 
-export function runRoutes(db: Db) {
+export function runRoutes(db: Db): RequestHandler {
   const router = Router();
 
   /* --- List runs for an agent --- */
   router.get("/:slug/agentes/:agenteId/runs", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const runs = await db
       .select()
       .from(run)
-      .where(and(eq(run.agenteId, req.params["agenteId"] ?? ""), eq(run.empresaId, emp.id)))
+      .where(and(eq(run.agenteId, p(req.params["agenteId"])), eq(run.empresaId, emp.id)))
       .orderBy(desc(run.iniciadoEm))
       .limit(50);
 
@@ -39,13 +42,13 @@ export function runRoutes(db: Db) {
   /* --- Get single run --- */
   router.get("/:slug/runs/:runId", requireAuth, async (req, res) => {
     const userId = req.actor.type === "user" ? req.actor.userId : "";
-    const emp = await resolveEmpresa(db, req.params["slug"] ?? "", userId);
+    const emp = await resolveEmpresa(db, p(req.params["slug"]), userId);
     if (!emp) { res.status(404).json({ ok: false, error: "Acesso negado" }); return; }
 
     const [found] = await db
       .select()
       .from(run)
-      .where(and(eq(run.id, req.params["runId"] ?? ""), eq(run.empresaId, emp.id)));
+      .where(and(eq(run.id, p(req.params["runId"])), eq(run.empresaId, emp.id)));
 
     if (!found) { res.status(404).json({ ok: false, error: "Run não encontrado" }); return; }
     res.json({ ok: true, data: found });
@@ -71,8 +74,8 @@ export function runRoutes(db: Db) {
       return;
     }
 
-    const slug = req.params["slug"] ?? "";
-    const agenteId = req.params["agenteId"] ?? "";
+    const slug = p(req.params["slug"]);
+    const agenteId = p(req.params["agenteId"]);
 
     /* Verify agent belongs to empresa */
     const emp = await resolveEmpresa(db, slug, userId);
@@ -101,8 +104,8 @@ export function runRoutes(db: Db) {
         agenteId,
         userId,
         input: parsed.data.message,
-        history: parsed.data.history as RunMessage[] | undefined,
-        tarefaId: parsed.data.tarefaId,
+        ...(parsed.data.history !== undefined ? { history: parsed.data.history as RunMessage[] } : {}),
+        ...(parsed.data.tarefaId !== undefined ? { tarefaId: parsed.data.tarefaId } : {}),
       });
 
       for await (const event of gen) {
@@ -117,5 +120,5 @@ export function runRoutes(db: Db) {
     }
   });
 
-  return router;
+  return router as unknown as RequestHandler;
 }

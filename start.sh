@@ -1,29 +1,17 @@
-#!/usr/bin/env bash
-set -e
+#!/bin/bash
+# CozinhAI — Script de inicialização
+# Uso: ./start.sh [dev|prod]
 
-echo "🍳 CozinhAI — Iniciando..."
+MODE="${1:-dev}"
 
-# Verificar .env
-if [ ! -f .env ]; then
-  cp .env.example .env
-  echo "⚠️  .env criado a partir do .env.example — configure DATABASE_URL antes de continuar"
-  exit 1
+if [ "$MODE" = "prod" ]; then
+  echo "Iniciando em modo produção via PM2..."
+  pm2 start ecosystem.config.js
+  pm2 save
+else
+  echo "Iniciando em modo desenvolvimento..."
+  if ! command -v concurrently &> /dev/null; then
+    pnpm install
+  fi
+  pnpm dev
 fi
-
-# Instalar dependências se necessário
-if [ ! -d node_modules ]; then
-  echo "📦 Instalando dependências..."
-  pnpm install
-fi
-
-# Iniciar servidor e UI em paralelo
-cleanup() {
-  kill 0
-}
-trap cleanup EXIT
-
-echo "🚀 Iniciando servidor (porta 3100) e UI (porta 5173)..."
-pnpm dev:server &
-pnpm dev:ui &
-
-wait

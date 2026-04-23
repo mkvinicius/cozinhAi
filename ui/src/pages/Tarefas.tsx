@@ -21,13 +21,6 @@ const statusIcons: Record<Tarefa["status"], React.ComponentType<{ className?: st
   cancelada: Circle,
 };
 
-const statusLabels: Record<Tarefa["status"], string> = {
-  pendente: "Pendente",
-  em_progresso: "Em progresso",
-  aguardando: "Aguardando",
-  concluida: "Concluída",
-  cancelada: "Cancelada",
-};
 
 const prioridadeColors: Record<Tarefa["prioridade"], string> = {
   urgente: "text-red-600 dark:text-red-400",
